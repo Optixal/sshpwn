@@ -1,1 +1,3 @@
 DownloadDirectory /home/optixal/Downloads/
+KeyFile ~/.ssh/id_rsa
+HostFileForMultiUser hosts
