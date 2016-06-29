@@ -17,9 +17,9 @@ def getvictimlist(configs):
         RHOST = input(cs.status + " Enter remote host: ")
         try:
             victims.append(ssh(user=RUSER, host=RHOST, keyfile=configs["KeyFile"]))
-            return victims, 0
+            return victims
         except:
-            return None, 2
+            return None
 
     elif mode == 'm':
         print(cs.status, "Using", configs["HostFileForMultiUser"], "file")
@@ -32,12 +32,12 @@ def getvictimlist(configs):
                 continue
         if len(victims) == 0:
             print(cs.error, "Unable to connect to anyone in", configs["HostFileForMultiUser"], "file")
-            return None, 2
+            return None
 
         for victim in victims:
             print(cs.good, "Connected to", victim.host)
         print(cs.status, "Total connected users:", len(victims))
-        return victims, 0
+        return victims
 
     elif mode == 'b':
         def bruteforce(ip):
@@ -99,16 +99,16 @@ def getvictimlist(configs):
         # Consolidate Victims
         if len(victims) == 0:
             print(cs.error, "Unable to connect to anyone in", configs["HostFileForMultiUser"], "file")
-            return None, 2
+            return None
         
         for victim in victims:
             print(cs.good, "Connected to", victim.host)
         print(cs.status, "Total connected users:", len(victims))
-        return victims, 0
+        return victims
 
     else:
         print(cs.error, "Unknown mode '" + mode + "'")
-        return None, 2
+        return None
 
 def builtincmd(cmd):
     if not cmd:
@@ -148,8 +148,8 @@ def main():
 
     try:
         while True:
-            victims, getvictimscode = getvictimlist(configs)
-            if getvictimscode == 2:
+            victims = getvictimlist(configs)
+            if not victims:
                 continue
 
             while True:
