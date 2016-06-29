@@ -12,8 +12,10 @@ def execute(session, configs, params):
         print(cs.status, "Usage: command [command (no nohup and &)]")
         return 1
     
-    shell = session.process("/bin/sh")
+    shell = session.process("/bin/bash")
     shell.sendline(params)
-    sleep(1)
+    print(cs.status, "Starting... will take 5 seconds...")
+    sleep(5)
+    print(cs.status, "Command executed! Closing shell...")
     shell.close()
     return 0

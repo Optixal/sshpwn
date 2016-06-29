@@ -12,7 +12,7 @@ def execute(session, configs, params):
         print(cs.status, "Usage: command [command (no nohup and &)]")
         return 1
     
-    shell = session.process("/bin/sh")
+    shell = session.process("/bin/sh", env={'PS1':''})
     shell.sendline(params)
     sleep(1)
     shell.close()
