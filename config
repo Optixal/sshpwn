@@ -1,3 +1,7 @@
-DownloadDirectory /home/optixal/Downloads/
-KeyFile ~/.ssh/id_rsa
-HostFileForMultiUser hosts/hosts
+# sshpwn config file
+# Use a space as a delimiter
+# Use hashtags for comments
+
+DownloadDirectory ~/Downloads/		# Downloads folder to store loot
+KeyFile ~/.ssh/id_rsa			# Private key location
+KeyFilePub ~/.ssh/id_rsa.pub		# Public key location

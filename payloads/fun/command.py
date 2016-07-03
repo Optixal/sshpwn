@@ -5,15 +5,16 @@ import misc.coloredstatus as cs
 from time import sleep
 import os
 
-waitforcapture = 1
-
 def execute(session, configs, params):
     if not params:
         print(cs.status, "Usage: command [command (no nohup and &)]")
         return 1
     
-    shell = session.process("/bin/sh")
-    shell.sendline(params)
-    sleep(1)
-    shell.close()
-    return 0
+    try:
+        shell = session.shell("/bin/bash")
+        shell.sendline(params)
+        output = str(shell.recvrepeat(0.2), "UTF-8")
+        shell.close()
+        return 0
+    except:
+        return 2

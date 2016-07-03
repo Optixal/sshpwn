@@ -5,19 +5,23 @@ import misc.coloredstatus as cs
 from time import sleep
 import os
 
-waitforcapture = 1
-
 def execute(session, configs, params):
-    
-    if params == None:
-        print(cs.status, "Usage: dumphash [user]")
-        return 1
-    elif params == "root":
-        params = "/root/"
-    else:
-        params = "/home/" + params + "/"
+   
+    def download(remote, local):
+        try:
+            session.download_file(remote, download_dir + local)
+        except PermissionError:
+            pass
+
+    # Option to download another user's bash_history from machine
+    user = params if params else session.user
 
     download_dir = configs["DownloadDirectory"] + session.host + "/"
     os.system("mkdir -p " + download_dir)
-    session.download_file(params + ".bash_history", download_dir + "bash_history")
-    return 0
+    remote_home_dir = "/home/" + user + "/" if user != "root" else "/root/" 
+    
+    try:
+        download(remote_home_dir + ".bash_history", user + "_bash_hist") 
+        return 0
+    except:
+        return 2

