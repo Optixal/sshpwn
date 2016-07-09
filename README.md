@@ -1,5 +1,5 @@
 # sshpwn
-A modular framework and program for synchronous pwning with ssh, powered by Python 3. Requires [Python 3.0+](https://www.python.org/downloads/) and [python3-pwntools](https://github.com/arthaud/python3-pwntools). For educational and controlled penetration testing purposed only.
+A modular framework and program for synchronous pwning with ssh, powered by Python 3. Requires [Python 3.0+](https://www.python.org/downloads/) and [python3-pwntools](https://github.com/arthaud/python3-pwntools). For educational and controlled penetration testing purposes only.
 
 ## Version 2.0
 - [x] Multi-threading with execute
