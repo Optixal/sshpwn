@@ -1,3 +1,8 @@
-root@192.168.1.29
-root@192.168.1.28    # testing...
-optixal@192.168.1.31
+# Each entry should be in the format of [user]@[host]
+# Comment with hashtags
+
+root@192.168.1.29	# Comment
+root@192.168.1.28
+john@192.168.1.31
+student@192.168.1.31
+

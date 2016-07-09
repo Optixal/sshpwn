@@ -1,7 +1,32 @@
-# sshpwn config file
-# Use a space as a delimiter
+# sshpwn 2.0 config file
+# Use a single space as a delimiter
 # Use hashtags for comments
 
-DownloadDirectory ~/Downloads/		# Downloads folder to store loot
-KeyFile ~/.ssh/id_rsa			# Private key location
-KeyFilePub ~/.ssh/id_rsa.pub		# Public key location
+# Disk Configs
+DownloadDirectory ~/Downloads/          # Downloads folder to store loot
+KeyFile ~/.ssh/id_rsa                   # Private key location
+KeyFilePub ~/.ssh/id_rsa.pub            # Public key location
+
+# Thread Count Configs
+MultiUserThreads 16
+BruteForceThreads 256
+RefreshThreads 16
+CommandExecutionThreads 16
+
+# Timeout Configs
+SingleUserTimeout 3
+MultiUserTimeout 2
+BruteForceTimeout 2
+RefreshTimeout 1
+
+# Whitelist Options
+Whitelist off
+WhitelistLocation hosts/whitelist
+
+# Debug Mode (on/off)
+DebugMode off                           # Increases verbosity
+
+# CTF Options (on/off)
+MissionCriticalMode off                 # Re-establishes all SSH connections before every command executed (slower, but more reliable and stable) (turn on during CTFs)
+UploadKeyOnConnect off                  # Immediately executes injectkey.py module when a connection is established
+

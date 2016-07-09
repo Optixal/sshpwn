@@ -23,6 +23,10 @@ def execute(session, configs, params):
     # TODO: Upload multiple files
     params = params.split(" ")
     
+    if len(params) < 2:
+        print(cs.status, "Usage: upload [local] [remote]")
+        return 1
+    
     local_location = params[0].replace("~", os.path.expanduser("~"))
     remote_home_dir = "/home/" + session.user + "/" if session.user != "root" else "/root/"
     remote_location = params[1].replace("~/", remote_home_dir)
