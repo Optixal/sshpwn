@@ -1,5 +1,5 @@
 # sshpwn
-A modular framework and program for synchronous pwning with ssh, powered by Python 3. Requires [Python 3.0+](https://www.python.org/downloads/) and [python3-pwntools](https://github.com/arthaud/python3-pwntools).
+A modular framework and program for synchronous pwning with ssh, powered by Python 3. Requires [Python 3.0+](https://www.python.org/downloads/) and [python3-pwntools](https://github.com/arthaud/python3-pwntools). For educational and controlled penetration testing purposed only.
 
 ## Version 2.0
 - [x] Multi-threading with execute
@@ -20,6 +20,7 @@ A modular framework and program for synchronous pwning with ssh, powered by Pyth
 Easily connect to a large amount of users within seconds through ssh tunnels, and manipulate them concurrently with sshpwn's multi-threading capabilties.
 
 sshpwn offers three modes to choose from when connecting with your targets:
+
 1. Single-User Mode
 2. Multi-User Mode
 3. Brute Force Mode
