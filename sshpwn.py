@@ -34,6 +34,7 @@ def greets():
 
     print("\n" + style1.line(16))
     print(style2.fadein(), cs.pinkwrap(release), style2.fadeout())
+    print(style2.fadein(), cs.pinkwrap(" Optixal  "), style2.fadeout())
     print(style1.line(16) + "\n")
 
     now = datetime.datetime.now()
